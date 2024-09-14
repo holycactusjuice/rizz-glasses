@@ -1,3 +1,8 @@
 *.venv
 *.pyc
 *.env
+*.log
+
+# glizzy
+glizzy/node_modules/
+glizzy/.expo/
