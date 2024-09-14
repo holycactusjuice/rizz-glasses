@@ -1,12 +1,9 @@
 import assemblyai as aai
 from dotenv import load_dotenv
 import os
-import requests  # Import requests library
 
 load_dotenv()
 aai.settings.api_key = os.getenv("ASSEMBLY_APIKEY")
-
-FLASK_SERVER_URL = 'http://172.20.10.9:5000'  # Flask server URL
 
 def on_open(session_opened: aai.RealtimeSessionOpened):
     print("Session ID:", session_opened.session_id)
@@ -17,13 +14,6 @@ def on_data(transcript: aai.RealtimeTranscript):
 
     if isinstance(transcript, aai.RealtimeFinalTranscript):
         print(transcript.text, end="\r\n")
-        # Send transcription to Flask server
-        try:
-            response = requests.post(FLASK_SERVER_URL + "/transcribe", json={'text': transcript.text})
-            response_data = response.json()
-            print(f"Server Response: {response_data}")
-        except Exception as e:
-            print(f"Error sending data to server: {e}")
     else:
         print(transcript.text, end="\r")
 
