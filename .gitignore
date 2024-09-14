@@ -1,7 +1,8 @@
 *.venv
 *.pyc
-*.env
+backend/*.env
 *.log
+*.DS_Store
 
 # glizzy
 glizzy/node_modules/
