@@ -8,8 +8,10 @@ aai.settings.api_key = os.getenv("ASSEMBLY_APIKEY")
 
 FLASK_SERVER_URL = 'http://172.20.10.9:5000'  # Flask server URL
 
+
 def on_open(session_opened: aai.RealtimeSessionOpened):
     print("Session ID:", session_opened.session_id)
+
 
 def on_data(transcript: aai.RealtimeTranscript):
     if not transcript.text:
@@ -19,7 +21,8 @@ def on_data(transcript: aai.RealtimeTranscript):
         print(transcript.text, end="\r\n")
         # Send transcription to Flask server
         try:
-            response = requests.post(FLASK_SERVER_URL + "/transcribe", json={'text': transcript.text})
+            response = requests.post(
+                FLASK_SERVER_URL + "/transcribe", json={'text': transcript.text})
             response_data = response.json()
             print(f"Server Response: {response_data}")
         except Exception as e:
@@ -27,11 +30,14 @@ def on_data(transcript: aai.RealtimeTranscript):
     else:
         print(transcript.text, end="\r")
 
+
 def on_error(error: aai.RealtimeError):
     print("An error occurred:", error)
 
+
 def on_close():
     print("Closing Session")
+
 
 transcriber = aai.RealtimeTranscriber(
     sample_rate=16_000,
@@ -39,6 +45,7 @@ transcriber = aai.RealtimeTranscriber(
     on_error=on_error,
     on_open=on_open,
     on_close=on_close,
+    utterance_silence_threshold=5000
 )
 
 transcriber.connect()
