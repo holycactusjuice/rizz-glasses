@@ -2,15 +2,19 @@ import assemblyai as aai
 from dotenv import load_dotenv
 import os
 import requests  # Import requests library
+import time
 
 load_dotenv()
 aai.settings.api_key = os.getenv("ASSEMBLY_APIKEY")
 
 FLASK_SERVER_URL = 'http://172.20.10.9:5000'  # Flask server URL
 
+start_time = 0
+
 
 def on_open(session_opened: aai.RealtimeSessionOpened):
     print("Session ID:", session_opened.session_id)
+    start_time = time.time()
 
 
 def on_data(transcript: aai.RealtimeTranscript):
@@ -22,7 +26,7 @@ def on_data(transcript: aai.RealtimeTranscript):
         # Send transcription to Flask server
         try:
             response = requests.post(
-                FLASK_SERVER_URL + "/transcribe", json={'text': transcript.text})
+                FLASK_SERVER_URL + "/transcribe", json={'text': transcript.text, 'time': time.time() - start_time})
             response_data = response.json()
             print(f"Server Response: {response_data}")
         except Exception as e:
@@ -45,7 +49,7 @@ transcriber = aai.RealtimeTranscriber(
     on_error=on_error,
     on_open=on_open,
     on_close=on_close,
-    utterance_silence_threshold=5000
+    end_utterance_silence_threshold=5000
 )
 
 transcriber.connect()
