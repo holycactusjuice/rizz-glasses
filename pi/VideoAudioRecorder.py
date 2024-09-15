@@ -397,7 +397,7 @@ context = None
 
 @app.route('/start-recording', methods=['POST'])
 def start_recording():
-    global start_recording_timestamp
+    global start_recording_timestamp, context
     start_recording_timestamp = time.time()
 
     # get the context

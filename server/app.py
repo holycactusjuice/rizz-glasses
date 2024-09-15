@@ -46,7 +46,7 @@ def create_app():
         })
 
         return jsonify({"message": "New transcription inserted"})
-
+    
     def update_transcription(unix_timestamp, transcription_data):
         query = {"unix_timestamp": unix_timestamp}  # get from pi
 
