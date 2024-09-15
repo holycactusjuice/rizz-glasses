@@ -104,22 +104,22 @@ class VideoAudioRecorder:
             self.transcriber.close()
 
     @app.route('/start-recording', methods=['GET'])
-    def start_recording():
-        recorder = VideoAudioRecorder()
+    def start_recording(self):
+        self.recorder = VideoAudioRecorder()
 
         # Start video recording in a new thread
-        video_thread = threading.Thread(target=recorder.start_video_recording)
+        video_thread = threading.Thread(target=self.recorder.start_video_recording)
         video_thread.start()
 
         # Start audio transcription in a new thread
-        audio_thread = threading.Thread(target=recorder.start_audio_transcription)
+        audio_thread = threading.Thread(target=self.recorder.start_audio_transcription)
         audio_thread.start()
 
         return jsonify({"message": "Recording started"}), 200
 
     @app.route('/stop-recording', methods=['GET'])
-    def stop_recording():
-        recorder.stop()
+    def stop_recording(self):
+        self.recorder.stop()
         return jsonify({"message": "Recording stopped"}), 200
 
 
