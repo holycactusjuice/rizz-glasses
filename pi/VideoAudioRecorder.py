@@ -26,6 +26,7 @@ class VideoAudioRecorder:
         self.sample_rate = 16_000
         self.transcriber = None
         self.recorder = None
+        self.emotion_history = {}
 
     def start_video_recording(self):
         image_mean = np.array([127, 127, 127])
@@ -181,7 +182,7 @@ class VideoAudioRecorder:
             )
 
 
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(-1)
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
         size = (frame_width, frame_height)
@@ -203,9 +204,6 @@ class VideoAudioRecorder:
         width = input_size[0]
         height = input_size[1]
         priors = define_img_size(input_size)
-
-        emotion_history = []
-        start_time = time.time()
 
         while self.recording:
             ret, frame = cap.read()
@@ -251,13 +249,13 @@ class VideoAudioRecorder:
                     face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
 
                     # Run emotion prediction
-                    emotion_prediction = emotion_model.predict(face_reshaped)
+                    emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
                     max_index = np.argmax(emotion_prediction[0])
                     emotion_label = emotion_dict[max_index]
                     confidence = round(emotion_prediction[0][max_index] * 100)
 
                     # Add the detected emotion to history
-                    emotion_history.append(emotion_label)
+                    self.emotion_history.append(emotion_label, confidence)
 
                     # Draw a bounding box around the face and label it with the detected emotion
                     cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -265,28 +263,25 @@ class VideoAudioRecorder:
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
                     cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-                # Calculate the elapsed time
-                elapsed_time = time.time() - start_time
-
-                # Check if 5 seconds have passed
-                if elapsed_time >= 5:
-                    # Determine the most common emotion in the last 5 seconds
-                    if emotion_history:
-                        most_common_emotion = Counter(emotion_history).most_common(1)[0][0]
-                        cv2.putText(img_ori, f"5s Sentiment: {most_common_emotion}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    # Reset the history and timer
-                    emotion_history = []
-                    start_time = time.time()
-                    # Send sentiment to Flask server
-                    try:
-                        response = requests.post(
-                            FLASK_SERVER_URL + "/sentiment",
-                            json={'text': most_common_emotion, 'time': time.time() - self.start_time}
-                        )
-                        response_data = response.json()
-                        print(f"Server Response: {response_data}")
-                    except Exception as e:
-                        print(f"Error sending data to server: {e}")
+                # # Check if 5 seconds have passed
+                # if elapsed_time >= 5:
+                #     # Determine the most common emotion in the last 5 seconds
+                #     if emotion_history:
+                #         most_common_emotion = Counter(emotion_history).most_common(1)[0][0]
+                #         cv2.putText(img_ori, f"5s Sentiment: {most_common_emotion}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                #     # Reset the history and timer
+                #     emotion_history = []
+                #     start_time = time.time()
+                #     # Send sentiment to Flask server
+                #     try:
+                #         response = requests.post(
+                #             FLASK_SERVER_URL + "/sentiment",
+                #             json={'text': most_common_emotion, 'time': time.time() - self.start_time}
+                #         )
+                #         response_data = response.json()
+                #         print(f"Server Response: {response_data}")
+                #     except Exception as e:
+                #         print(f"Error sending data to server: {e}")
                 
                 # Display the output frame with bounding boxes and emotion labels (only if display is present)
                 # cv2.imshow("Emotion Detector", img_ori)
@@ -307,11 +302,23 @@ class VideoAudioRecorder:
 
             if isinstance(transcript, aai.RealtimeFinalTranscript):
                 print(transcript.text, end="\r\n")
+                # Process the most common sentiment
+                most_common_emotion = Counter(self.emotion_history.keys()).most_common(1)[0][0]
+                emotion_count = 0
+                total_confidence = 0
+                for emotion in self.emotion_history.keys():
+                    if emotion == most_common_emotion:
+                        emotion_count += 1
+                        total_confidence += self.emotion_history[emotion]
+
+                avg_confidence = total_confidence // emotion_count
+
+                self.emotion_history.clear()
                 # Send transcription to Flask server
                 try:
                     response = requests.post(
                         FLASK_SERVER_URL + "/transcribe",
-                        json={'text': transcript.text, 'time': time.time() - self.start_time}
+                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'confidence': avg_confidence, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
@@ -338,7 +345,6 @@ class VideoAudioRecorder:
         self.transcriber.connect()
 
         print("Transcribing audio...")
-
         microphone_stream = aai.extras.MicrophoneStream(sample_rate=self.sample_rate)
         self.transcriber.stream(microphone_stream)
 
@@ -347,14 +353,15 @@ class VideoAudioRecorder:
         if self.transcriber:
             self.transcriber.close()
 
-
 recorder = VideoAudioRecorder()
-
 # Initialize Flask app
 app = Flask(__name__)
+start_recording_timestamp = 0
 
 @app.route('/start-recording', methods=['GET'])
 def start_recording():
+    start_recording_timestamp = time.time()
+
     # Start video recording in a new thread
     video_thread = threading.Thread(target=recorder.start_video_recording)
     video_thread.start()
