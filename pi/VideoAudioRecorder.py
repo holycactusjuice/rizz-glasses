@@ -181,7 +181,7 @@ class VideoAudioRecorder:
             )
 
 
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(-1)
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
         size = (frame_width, frame_height)
@@ -251,7 +251,7 @@ class VideoAudioRecorder:
                     face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
 
                     # Run emotion prediction
-                    emotion_prediction = emotion_model.predict(face_reshaped)
+                    emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
                     max_index = np.argmax(emotion_prediction[0])
                     emotion_label = emotion_dict[max_index]
                     confidence = round(emotion_prediction[0][max_index] * 100)
