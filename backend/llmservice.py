@@ -2,7 +2,6 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_groq import ChatGroq
 from langchain.memory import ConversationBufferMemory
-from langchain.schema import HumanMessage, AIMessage
 
 class GroqConversationAnalyzer:
     def __init__(self, api_key):
@@ -10,23 +9,6 @@ class GroqConversationAnalyzer:
         # Initialize LangChain components
         self.llm = ChatGroq(api_key=api_key)
         self.memory = ConversationBufferMemory(input_key="human_input", memory_key="chat_history")
-        self.prompt_template_suggestion = PromptTemplate(
-            input_variables=["chat_history, human_input"],
-            template=
-            """
-            {human_input}
-            You are a first date, dating conversation analyst chatbot, and you are tasked with providing a suggestion for the next sentence in a first date between two individuals.
-            Given the following conversation history, suggest the next sentence that would be appropriate, engaging and expressive of the person in the conversation.
-            Use past context to suggest the timing of the sentence. Some sentences become okay to say later on in the conversation.
-
-            Chat History:
-            {chat_history}
-
-            Suggestion:
-            """
-        )
-
-
         self.prompt_template_suggestion = PromptTemplate(
             input_variables=["chat_history, human_input"],
             template=
@@ -39,7 +21,8 @@ class GroqConversationAnalyzer:
         Chat History:
         {chat_history}
 
-        Suggestion:
+        Provide:
+        Suggestion: [Insert your suggested sentence here]
         """
         )
 
@@ -69,17 +52,36 @@ class GroqConversationAnalyzer:
 
         New Input Sentence: {input}
 
-        Please provide:
+        Provide:
         1. Score: [Insert a single integer between 1 and 10]
         2. Brief Explanation: [Offer a concise analysis of the sentence's effectiveness, appropriateness, and impact on the conversation, considering the current stage of the interaction]
+        """
+        )
 
-        Your analysis:
+        self.prompt_template_distinguish = PromptTemplate(
+            input_variables=["text_input, human_input"],
+            template=
+        """
+        {human_input}
+        You are a first date, dating conversation analyst chatbot, and you are tasked with providing a suggestion for the next sentence in a first date between two individuals.
+        Given the following conversation history, suggest the next sentence that would be appropriate, engaging and expressive of the person in the conversation.
+        Use past context to suggest the timing of the sentence. Some sentences become okay to say later on in the conversation.
+
+        Chat History:
+        {chat_history}
+
+        Provide:
+        Suggestion: [Insert your suggested sentence here]
         """
         )
 
         self.chain_suggestion = LLMChain(llm=self.llm, prompt=self.prompt_template_suggestion, memory=self.memory)
         self.chain_score = LLMChain(llm=self.llm, prompt=self.prompt_template_scoring, memory=self.memory)
 
+    def distinguish(self, input_text):
+        response = self.llm.invoke({"input": input_text})
+        return response['text']
+    
     def return_suggestion(self):
         response = self.chain_suggestion.invoke({"human_input":""})
         suggestion = response['text'].strip()

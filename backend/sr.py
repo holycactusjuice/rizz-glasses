@@ -2,7 +2,10 @@ import assemblyai as aai
 from dotenv import load_dotenv
 import os
 import requests  # Import requests library
+from flask import Flask, request, jsonify
 import time
+
+app = Flask(__name__)
 
 load_dotenv()
 aai.settings.api_key = os.getenv("ASSEMBLY_APIKEY")
@@ -42,7 +45,6 @@ def on_error(error: aai.RealtimeError):
 def on_close():
     print("Closing Session")
 
-
 transcriber = aai.RealtimeTranscriber(
     sample_rate=16_000,
     on_data=on_data,
@@ -52,9 +54,20 @@ transcriber = aai.RealtimeTranscriber(
     end_utterance_silence_threshold=5000
 )
 
-transcriber.connect()
+@app.route('/start-recording', methods={'GET'})
+def start_recording():
+    transcriber.connect()
 
-microphone_stream = aai.extras.MicrophoneStream(sample_rate=16_000)
-transcriber.stream(microphone_stream)
+    print("Recording started")
 
-transcriber.close()
+    microphone_stream = aai.extras.MicrophoneStream(sample_rate=16_000)
+    transcriber.stream(microphone_stream)
+
+@app.route('/stop-recording', methods={'GET'})
+def stop_recording():
+    transcriber.close()
+
+    return "Recording stopped"
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=6000)

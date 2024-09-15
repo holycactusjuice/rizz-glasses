@@ -25,11 +25,10 @@ export default function App() {
             }
             return <FontAwesome name={iconName} size={size} color={color} />;
           },
+          tabBarActiveTintColor: "tomato",
+          tabBarInactiveTintColor: "gray",
+          tabBarStyle: [{ display: "flex" }, null],
         })}
-        tabBarOptions={{
-          activeTintColor: "tomato",
-          inactiveTintColor: "gray",
-        }}
       >
         <Tab.Screen name="Home" component={Home} />
         <Tab.Screen name="Settings" component={Settings} />
