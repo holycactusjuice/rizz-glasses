@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 
 const HomeScreen = () => {
-  const piAddress = "http://<YOUR_PI_IP>:3000"; // Replace with your Raspberry Pi's IP
+  const piAddress = "http://10.37.118.10:6000"; // Replace with your Raspberry Pi's IP
 
   const startRecording = async () => {
     try {
