@@ -18,7 +18,7 @@ def create_app():
     MONGO_CLUSTER = os.getenv("MONGO_CLUSTER", "cluster0")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-    analyzer = GroqConversationAnalyzer(GROQ_API_KEY, user=True)
+    analyzer = GroqConversationAnalyzer(GROQ_API_KEY)
 
     app = Flask(__name__)
 

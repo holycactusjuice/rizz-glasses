@@ -40,7 +40,7 @@ const HomeScreen = () => {
     <View style={styles.container}>
       <TextInput
         style={styles.textField}
-        placeholder="Enter your relationship context here"
+        placeholder="Enter your context here"
         placeholderTextColor="gray"
         value={text}
         onChangeText={setText}
