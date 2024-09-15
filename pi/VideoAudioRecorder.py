@@ -10,8 +10,8 @@ import time
 import math
 from keras.models import load_model
 from collections import Counter
-from picamera2 import Picamera2
-from libcamera import controls
+# from picamera2 import Picamera2
+# from libcamera import controls
 import pyaudio
 
 # Load environment variables
@@ -189,11 +189,11 @@ class VideoAudioRecorder:
         frame_height = int(cap.get(4))
         size = (frame_width, frame_height)
 
-        picam2 = Picamera2()
-        picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (frame_width, frame_height)}))
-        picam2.start()
+        # picam2 = Picamera2()
+        # picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (frame_width, frame_height)}))
+        # picam2.start()
 
-        picam2.set_controls({"AwbMode": controls.AwbModeEnum.Auto})
+        # picam2.set_controls({"AwbMode": controls.AwbModeEnum.Auto})
 
         if not cap.isOpened():
             print("Error: Could not open webcam.")
@@ -214,28 +214,28 @@ class VideoAudioRecorder:
         priors = define_img_size(input_size)
 
         while self.recording:
-            # Capture frame from PiCamera2
-            frame = self.picam2.capture_array()
+            # # Capture frame from PiCamera2
+            # frame = self.picam2.capture_array()
 
-            # Convert frame from BGR to RGB
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # # Convert frame from BGR to RGB
+            # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            # Resize and prepare the frame for face detection
-            rect = cv2.resize(frame_rgb, (width, height))
-            net.setInput(cv2.dnn.blobFromImage(
-                rect, 1 / image_std, (width, height), 127)
-            )
-
-            # frame = cap.read()
-            # out.write(frame)
-            # frame = cv2.flip(frame, 1)
-            # img_ori = frame
             # # Resize and prepare the frame for face detection
-            # rect = cv2.resize(img_ori, (width, height))
-            # rect = cv2.cvtColor(rect, cv2.COLOR_BGR2RGB)
+            # rect = cv2.resize(frame_rgb, (width, height))
             # net.setInput(cv2.dnn.blobFromImage(
             #     rect, 1 / image_std, (width, height), 127)
             # )
+
+            frame = cap.read()
+            out.write(frame)
+            frame = cv2.flip(frame, 1)
+            img_ori = frame
+            # Resize and prepare the frame for face detection
+            rect = cv2.resize(img_ori, (width, height))
+            rect = cv2.cvtColor(rect, cv2.COLOR_BGR2RGB)
+            net.setInput(cv2.dnn.blobFromImage(
+                rect, 1 / image_std, (width, height), 127)
+            )
 
             # Perform face detection using the existing network
             boxes, scores = net.forward(["boxes", "scores"])
@@ -256,8 +256,8 @@ class VideoAudioRecorder:
                 x1, y1, x2, y2 = box
 
                 # Extract the face region from the frame
-                # face = img_ori[y1:y2, x1:x2]
-                face = frame_rgb[y1:y2, x1:x2]
+                face = img_ori[y1:y2, x1:x2]
+                # face = frame_rgb[y1:y2, x1:x2]
 
                 if face.size != 0:
                     try:
@@ -277,15 +277,15 @@ class VideoAudioRecorder:
                         self.emotion_history[emotion_label] = confidence
 
                         # Draw a bounding box around the face and label it with the detected emotion
-                        # cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        # cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
-                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                        # cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-
-                        cv2.rectangle(frame_rgb, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(frame_rgb, emotion_label, (x1, y1 - 10),
+                        cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                        cv2.putText(frame_rgb, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+
+                        # cv2.rectangle(frame_rgb, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # cv2.putText(frame_rgb, emotion_label, (x1, y1 - 10),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        # cv2.putText(frame_rgb, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
                     except Exception as e:
                         print(f"Error: {e}")
                         continue
@@ -310,8 +310,8 @@ class VideoAudioRecorder:
             #     except Exception as e:
             #         print(f"Error sending data to server: {e}")
 
-            # Convert back to BGR for display
-            frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+            # # Convert back to BGR for display
+            frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
             
             # Display the output frame with bounding boxes and emotion labels (only if display is present)
             cv2.imshow("Emotion Detector", frame_bgr)
