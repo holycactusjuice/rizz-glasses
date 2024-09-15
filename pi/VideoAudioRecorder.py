@@ -105,8 +105,6 @@ class VideoAudioRecorder:
 
     @app.route('/start-recording', methods=['GET'])
     def start_recording():
-        global recorder
-
         # Start video recording in a new thread
         video_thread = threading.Thread(target=recorder.start_video_recording)
         video_thread.start()
