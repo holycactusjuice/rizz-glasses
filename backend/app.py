@@ -9,7 +9,7 @@ def create_app():
 
     MONGO_PASSWD = os.getenv("MONGO_PASSWD")
     MONGO_USER = os.getenv("MONGO_USER")
-    MONGO_DB = os.getenv("MONGO_DB", "your_database_name")
+    MONGO_DB = os.getenv("MONGO_DB", "collection")
     MONGO_CLUSTER = os.getenv("MONGO_CLUSTER", "cluster0")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     
@@ -17,12 +17,13 @@ def create_app():
 
     app = Flask(__name__)
 
-    # # Construct MongoDB Atlas URI
-    # mongo_uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASSWD}@{MONGO_CLUSTER}.mongodb.net/{MONGO_DB}?retryWrites=true&w=majority"
+    # Construct MongoDB Atlas URI
+    mongo_uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASSWD}@{MONGO_CLUSTER}.ejp2g.mongodb.net/{MONGO_DB}?retryWrites=true&w=majority"
 
-    # # Set up MongoDB client
-    # mongo_client = MongoClient(mongo_uri)
-    # db = mongo_client[MONGO_DB]
+    # Set up MongoDB client
+    mongo_client = MongoClient(mongo_uri)
+    db = mongo_client[MONGO_DB]
+    items = db['items']
 
     @app.route('/')
     def hello():
