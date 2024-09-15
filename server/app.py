@@ -14,8 +14,6 @@ def create_app():
     MONGO_CLUSTER = os.getenv("MONGO_CLUSTER", "cluster0")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-    time_curr = 0
-
     analyzer = GroqConversationAnalyzer(GROQ_API_KEY)
 
     app = Flask(__name__)
@@ -51,7 +49,7 @@ def create_app():
         return jsonify({"message": "New transcription inserted"})
 
     def update_transcription(unix_timestamp, transcription_data):
-        query = {"unix_timestamp": 0}  # get from pi
+        query = {"unix_timestamp": unix_timestamp}  # get from pi
 
         items.update_one(query, {
             # update frequency table
@@ -70,7 +68,7 @@ def create_app():
         })
 
     def update_summary(unix_timestamp, summary):
-        query = {"unix_timestamp": 0}
+        query = {"unix_timestamp": unix_timestamp}
         items.update_one(query, {
             "$set": {"summary": summary}
         })
