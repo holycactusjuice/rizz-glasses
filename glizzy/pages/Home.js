@@ -16,7 +16,9 @@ const HomeScreen = () => {
 
   const startRecording = async () => {
     try {
-      const response = await axios.get(`${piAddress}/start-recording`);
+      const response = await axios.post(`${piAddress}/start-recording`, {
+        context: text,
+      });
       Alert.alert("Success", response.data);
     } catch (error) {
       Alert.alert("Error", "Could not start recording");

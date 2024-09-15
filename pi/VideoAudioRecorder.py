@@ -5,7 +5,7 @@ import assemblyai as aai
 from dotenv import load_dotenv
 import os
 import requests
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import time
 import math
 from keras.models import load_model
@@ -318,7 +318,7 @@ class VideoAudioRecorder:
                 try:
                     response = requests.post(
                         FLASK_SERVER_URL + "/transcribe",
-                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'confidence': avg_confidence, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
+                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'confidence': avg_confidence, 'context': context, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
@@ -357,11 +357,15 @@ recorder = VideoAudioRecorder()
 # Initialize Flask app
 app = Flask(__name__)
 start_recording_timestamp = 0
+context = None
 
-@app.route('/start-recording', methods=['GET'])
+@app.route('/start-recording', methods=['POST'])
 def start_recording():
     global start_recording_timestamp
     start_recording_timestamp = time.time()
+
+    # get the context
+    context = request.args.get('context')
 
     # Start video recording in a new thread
     video_thread = threading.Thread(target=recorder.start_video_recording)
