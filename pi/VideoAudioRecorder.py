@@ -372,7 +372,7 @@ class VideoAudioRecorder:
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
-                    engine.say(response_data.suggestion)
+                    engine.say(response_data['suggestion'])
                     engine.runAndWait()
                 except Exception as e:
                     print(f"Error sending data to server: {e}")
