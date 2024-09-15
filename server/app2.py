@@ -8,8 +8,6 @@ def create_app():
     # Load environment variables
     load_dotenv()
 
-    api_key = os.environ.get("GROQ_API_KEY")
-
     # Initialize LLM
     analyzer = GroqConversationAnalyzer(api_key)
 
