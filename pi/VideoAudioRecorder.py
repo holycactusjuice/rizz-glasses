@@ -26,7 +26,7 @@ class VideoAudioRecorder:
         self.sample_rate = 16_000
         self.transcriber = None
         self.recorder = None
-        self.emotion_history = []
+        self.emotion_history = {}
 
     def start_video_recording(self):
         image_mean = np.array([127, 127, 127])
@@ -255,7 +255,7 @@ class VideoAudioRecorder:
                     confidence = round(emotion_prediction[0][max_index] * 100)
 
                     # Add the detected emotion to history
-                    self.emotion_history.append(emotion_label)
+                    self.emotion_history.append(emotion_label, confidence)
 
                     # Draw a bounding box around the face and label it with the detected emotion
                     cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -303,13 +303,22 @@ class VideoAudioRecorder:
             if isinstance(transcript, aai.RealtimeFinalTranscript):
                 print(transcript.text, end="\r\n")
                 # Process the most common sentiment
-                most_common_emotion = Counter(self.emotion_history).most_common(1)[0][0]
-                self.emotion_history = []
+                most_common_emotion = Counter(self.emotion_history.keys()).most_common(1)[0][0]
+                emotion_count = 0
+                total_confidence = 0
+                for emotion in self.emotion_history.keys():
+                    if emotion == most_common_emotion:
+                        emotion_count += 1
+                        total_confidence += self.emotion_history[emotion]
+
+                avg_confidence = total_confidence // emotion_count
+
+                self.emotion_history.clear()
                 # Send transcription to Flask server
                 try:
                     response = requests.post(
                         FLASK_SERVER_URL + "/transcribe",
-                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
+                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'confidence': avg_confidence, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
