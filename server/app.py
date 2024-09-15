@@ -81,7 +81,7 @@ def create_app():
     def stop_recording():
         response = request.get_json()
         unix_timestamp = response.get('unix_timestamp')
-        update_summary(unix_timestamp, analyzer.return_summary())
+        update_summary(unix_timestamp, analyzer.summarize_conversation())
         return "Recording stopped"
 
     @app.route('/transcribe', methods=['POST', 'GET'])
