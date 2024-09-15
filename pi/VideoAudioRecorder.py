@@ -10,6 +10,7 @@ import time
 import math
 from keras.models import load_model
 from collections import Counter
+import pyttsx3
 # from picamera2 import Picamera2
 # from libcamera import controls
 import pyaudio
@@ -37,9 +38,9 @@ class VideoAudioRecorder:
         center_variance = 0.1
         size_variance = 0.2
         min_boxes = [
-            [10.0, 16.0, 24.0], 
-            [32.0, 48.0], 
-            [64.0, 96.0], 
+            [10.0, 16.0, 24.0],
+            [32.0, 48.0],
+            [64.0, 96.0],
             [128.0, 192.0, 256.0]
         ]
         strides = [8.0, 16.0, 32.0, 64.0]
@@ -47,21 +48,23 @@ class VideoAudioRecorder:
 
         emotion_model = load_model('FER_model.h5')
         emotion_dict = {
-            0: 'angry', 
-            1: 'disgust', 
-            2: 'fear', 
-            3: 'happy', 
-            4: 'neutral', 
-            5: 'sad', 
+            0: 'angry',
+            1: 'disgust',
+            2: 'fear',
+            3: 'happy',
+            4: 'neutral',
+            5: 'sad',
             6: 'surprise'
         }
+
         def define_img_size(image_size):
             shrinkage_list = []
             feature_map_w_h_list = []
             for size in image_size:
-                feature_map = [int(math.ceil(size / stride)) for stride in strides]
+                feature_map = [int(math.ceil(size / stride))
+                               for stride in strides]
                 feature_map_w_h_list.append(feature_map)
-        
+
             for i in range(0, len(image_size)):
                 shrinkage_list.append(strides)
             priors = generate_priors(
@@ -78,7 +81,7 @@ class VideoAudioRecorder:
                     for i in range(0, feature_map_list[0][index]):
                         x_center = (i + 0.5) / scale_w
                         y_center = (j + 0.5) / scale_h
-        
+
                         for min_box in min_boxes[index]:
                             w = min_box / image_size[0]
                             h = min_box / image_size[1]
@@ -110,28 +113,27 @@ class VideoAudioRecorder:
                 )
                 indexes = indexes[iou <= iou_threshold]
             return box_scores[picked, :]
-        
+
         def area_of(left_top, right_bottom):
             hw = np.clip(right_bottom - left_top, 0.0, None)
             return hw[..., 0] * hw[..., 1]
-        
-        
+
         def iou_of(boxes0, boxes1, eps=1e-5):
             overlap_left_top = np.maximum(boxes0[..., :2], boxes1[..., :2])
-            overlap_right_bottom = np.minimum(boxes0[..., 2:], boxes1[..., 2:]) 
-        
+            overlap_right_bottom = np.minimum(boxes0[..., 2:], boxes1[..., 2:])
+
             overlap_area = area_of(overlap_left_top, overlap_right_bottom)
             area0 = area_of(boxes0[..., :2], boxes0[..., 2:])
             area1 = area_of(boxes1[..., :2], boxes1[..., 2:])
             return overlap_area / (area0 + area1 - overlap_area + eps)
 
         def predict(
-            width, 
-            height, 
-            confidences, 
-            boxes, 
-            prob_threshold, 
-            iou_threshold=0.3, 
+            width,
+            height,
+            confidences,
+            boxes,
+            prob_threshold,
+            iou_threshold=0.3,
             top_k=-1
         ):
             boxes = boxes[0]
@@ -149,9 +151,9 @@ class VideoAudioRecorder:
                     [subset_boxes, probs.reshape(-1, 1)], axis=1
                 )
                 box_probs = hard_nms(box_probs,
-                                    iou_threshold=iou_threshold,
-                                    top_k=top_k,
-                                    )
+                                     iou_threshold=iou_threshold,
+                                     top_k=top_k,
+                                     )
                 picked_box_probs.append(box_probs)
                 picked_labels.extend([class_index] * box_probs.shape[0])
             if not picked_box_probs:
@@ -162,27 +164,27 @@ class VideoAudioRecorder:
             picked_box_probs[:, 2] *= width
             picked_box_probs[:, 3] *= height
             return (
-                picked_box_probs[:, :4].astype(np.int32), 
-                np.array(picked_labels), 
+                picked_box_probs[:, :4].astype(np.int32),
+                np.array(picked_labels),
                 picked_box_probs[:, 4]
             )
-        
+
         def convert_locations_to_boxes(locations, priors, center_variance,
-                               size_variance):
+                                       size_variance):
             if len(priors.shape) + 1 == len(locations.shape):
                 priors = np.expand_dims(priors, 0)
             return np.concatenate([
-                locations[..., :2] * center_variance * priors[..., 2:] + priors[..., :2],
+                locations[..., :2] * center_variance *
+                priors[..., 2:] + priors[..., :2],
                 np.exp(locations[..., 2:] * size_variance) * priors[..., 2:]
             ], axis=len(locations.shape) - 1)
-        
+
         def center_form_to_corner_form(locations):
             return np.concatenate(
                 [locations[..., :2] - locations[..., 2:] / 2,
-                locations[..., :2] + locations[..., 2:] / 2], 
+                 locations[..., :2] + locations[..., 2:] / 2],
                 len(locations.shape) - 1
             )
-
 
         cap = cv2.VideoCapture(-1)
         frame_width = int(cap.get(3))
@@ -198,12 +200,13 @@ class VideoAudioRecorder:
         if not cap.isOpened():
             print("Error: Could not open webcam.")
             return
-    
+
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width, frame_height))
+        out = cv2.VideoWriter('output.mp4', fourcc, 20.0,
+                              (frame_width, frame_height))
 
         print("Recording video...")
-        
+
         # Read the Caffe face detector.
         model_path = 'RFB-320/RFB-320.caffemodel'
         proto_path = 'RFB-320/RFB-320.prototxt'
@@ -264,24 +267,30 @@ class VideoAudioRecorder:
                         try:
                             # Preprocess the face for the emotion model
                             face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
-                            face_resized = cv2.resize(face_gray, (48, 48))  # Resize to match model input size
+                            # Resize to match model input size
+                            face_resized = cv2.resize(face_gray, (48, 48))
                             face_normalized = face_resized / 255.0
-                            face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
+                            face_reshaped = np.reshape(
+                                face_normalized, (1, 48, 48, 1))
 
                             # Run emotion prediction
-                            emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
+                            emotion_prediction = emotion_model.predict(
+                                face_reshaped, verbose=0)
                             max_index = np.argmax(emotion_prediction[0])
                             emotion_label = emotion_dict[max_index]
-                            confidence = round(emotion_prediction[0][max_index] * 100)
+                            confidence = round(
+                                emotion_prediction[0][max_index] * 100)
 
                             # Add the detected emotion to history
                             self.emotion_history[emotion_label] = confidence
 
                             # Draw a bounding box around the face and label it with the detected emotion
-                            cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            cv2.rectangle(img_ori, (x1, y1),
+                                          (x2, y2), (0, 255, 0), 2)
                             cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                            cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            cv2.putText(img_ori, str(
+                                confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
                             # cv2.rectangle(frame_rgb, (x1, y1), (x2, y2), (0, 255, 0), 2)
                             # cv2.putText(frame_rgb, emotion_label, (x1, y1 - 10),
@@ -313,7 +322,7 @@ class VideoAudioRecorder:
 
                 # # Convert back to BGR for display
                 # frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
-                
+
                 # # Display the output frame with bounding boxes and emotion labels (only if display is present)
                 # cv2.imshow("Emotion Detector", frame_bgr)
 
@@ -328,6 +337,9 @@ class VideoAudioRecorder:
             self.start_time = time.time()
 
         def on_data(transcript: aai.RealtimeTranscript):
+            engine = pyttsx3.init()
+            engine.setProperty('rate', 250)
+            engine.setProperty('volume', 0.9)
             if not transcript.text:
                 return
 
@@ -335,7 +347,8 @@ class VideoAudioRecorder:
                 print(transcript.text, end="\r\n")
                 # Process the most common sentiment
                 if self.emotion_history:
-                    most_common_emotion = Counter(self.emotion_history.keys()).most_common(1)[0][0]
+                    most_common_emotion = Counter(
+                        self.emotion_history.keys()).most_common(1)[0][0]
                 else:
                     most_common_emotion = None
                 emotion_count = 0
@@ -354,13 +367,16 @@ class VideoAudioRecorder:
                 try:
                     response = requests.post(
                         FLASK_SERVER_URL + "/transcribe",
-                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'confidence': avg_confidence, 'context': context, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
+                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'confidence': avg_confidence, 'context': context,
+                              'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
-                    
+                    engine.say(response_data.suggestion)
+                    engine.runAndWait()
                 except Exception as e:
                     print(f"Error sending data to server: {e}")
+                engine.stop()
             else:
                 print(transcript.text, end="\r")
 
@@ -382,7 +398,8 @@ class VideoAudioRecorder:
         self.transcriber.connect()
 
         print("Transcribing audio...")
-        microphone_stream = aai.extras.MicrophoneStream(sample_rate=self.sample_rate)
+        microphone_stream = aai.extras.MicrophoneStream(
+            sample_rate=self.sample_rate)
         self.transcriber.stream(microphone_stream)
 
     def stop(self):
@@ -390,11 +407,13 @@ class VideoAudioRecorder:
         if self.transcriber:
             self.transcriber.close()
 
+
 recorder = VideoAudioRecorder()
 # Initialize Flask app
 app = Flask(__name__)
 start_recording_timestamp = 0
 context = None
+
 
 @app.route('/start-recording', methods=['POST'])
 def start_recording():
@@ -414,10 +433,11 @@ def start_recording():
 
     return jsonify({"message": "Recording started"}), 200
 
+
 @app.route('/stop-recording', methods=['GET'])
 def stop_recording():
     recorder.stop()
-    requests.post(FLASK_SERVER_URL + "/stop-recording", 
+    requests.post(FLASK_SERVER_URL + "/stop-recording",
                   json={'start_recording_timestamp': start_recording_timestamp}
                   )
     return jsonify({"message": "Recording stopped"}), 200
