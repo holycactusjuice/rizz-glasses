@@ -314,6 +314,8 @@ class VideoAudioRecorder:
                         emotion_count += 1
                         total_confidence += self.emotion_history[emotion]
 
+                if emotion_count == 0:
+                    emotion_count = 1
                 avg_confidence = total_confidence // emotion_count
 
                 self.emotion_history.clear()

@@ -114,9 +114,9 @@ const styles = StyleSheet.create({
     borderWidth: 2, // Outline thickness
     borderColor: "gray", // Outline color
     // Shadow properties for both iOS and Android
-    shadowColor: "#000",
+    shadowColor: "gray",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 8, // Required for Android shadow
   },
