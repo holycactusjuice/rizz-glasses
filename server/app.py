@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 from llmservice import GroqConversationAnalyzer
 
-
 def create_app():
     load_dotenv()
 
@@ -92,6 +91,7 @@ def create_app():
         dialogue = transcription_json['text']
         transcription_timestamp = transcription_json['time']
         sentiment = transcription_json['sentiment']
+        context = transcription_json['context']
 
         analyzer.score_conversation(dialogue, terminal=False)
         suggestion = analyzer.return_suggestion()
