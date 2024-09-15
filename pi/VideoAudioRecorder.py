@@ -347,9 +347,12 @@ class VideoAudioRecorder:
 recorder = VideoAudioRecorder()
 # Initialize Flask app
 app = Flask(__name__)
+start_recording_timestamp = 0
 
 @app.route('/start-recording', methods=['GET'])
 def start_recording():
+    start_recording_timestamp = time.time()
+
     # Start video recording in a new thread
     video_thread = threading.Thread(target=recorder.start_video_recording)
     video_thread.start()
