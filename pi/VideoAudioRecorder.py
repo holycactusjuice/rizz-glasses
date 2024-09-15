@@ -312,10 +312,10 @@ class VideoAudioRecorder:
                 #         print(f"Error sending data to server: {e}")
 
                 # # Convert back to BGR for display
-                frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
+                # frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
                 
-                # Display the output frame with bounding boxes and emotion labels (only if display is present)
-                cv2.imshow("Emotion Detector", frame_bgr)
+                # # Display the output frame with bounding boxes and emotion labels (only if display is present)
+                # cv2.imshow("Emotion Detector", frame_bgr)
 
         cap.release()
         out.release()
