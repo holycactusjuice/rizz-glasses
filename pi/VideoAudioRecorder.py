@@ -300,6 +300,8 @@ class VideoAudioRecorder:
                             print(f"Error: {e}")
                             continue
 
+                    cv2.waitKey(10)
+
                 # # Check if 5 seconds have passed
                 # if elapsed_time >= 5:
                 #     # Determine the most common emotion in the last 5 seconds
@@ -320,11 +322,11 @@ class VideoAudioRecorder:
                 #     except Exception as e:
                 #         print(f"Error sending data to server: {e}")
 
-                # # Convert back to BGR for display
-                # frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
+                # Convert back to BGR for display
+                frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
 
-                # # Display the output frame with bounding boxes and emotion labels (only if display is present)
-                # cv2.imshow("Emotion Detector", frame_bgr)
+                # Display the output frame with bounding boxes and emotion labels (only if display is present)
+                cv2.imshow("Emotion Detector", frame_bgr)
 
         cap.release()
         out.release()
