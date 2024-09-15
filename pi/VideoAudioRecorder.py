@@ -242,26 +242,31 @@ class VideoAudioRecorder:
                     # Extract the face region from the frame
                     face = img_ori[y1:y2, x1:x2]
 
-                    # Preprocess the face for the emotion model
-                    face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
-                    face_resized = cv2.resize(face_gray, (48, 48))  # Resize to match model input size
-                    face_normalized = face_resized / 255.0
-                    face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
+                    if face.size != 0:
+                        try:
+                            # Preprocess the face for the emotion model
+                            face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+                            face_resized = cv2.resize(face_gray, (48, 48))  # Resize to match model input size
+                            face_normalized = face_resized / 255.0
+                            face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
 
-                    # Run emotion prediction
-                    emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
-                    max_index = np.argmax(emotion_prediction[0])
-                    emotion_label = emotion_dict[max_index]
-                    confidence = round(emotion_prediction[0][max_index] * 100)
+                            # Run emotion prediction
+                            emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
+                            max_index = np.argmax(emotion_prediction[0])
+                            emotion_label = emotion_dict[max_index]
+                            confidence = round(emotion_prediction[0][max_index] * 100)
 
-                    # Add the detected emotion to history
-                    self.emotion_history[emotion_label] = confidence
+                            # Add the detected emotion to history
+                            self.emotion_history[emotion_label] = confidence
 
-                    # Draw a bounding box around the face and label it with the detected emotion
-                    cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                    cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            # Draw a bounding box around the face and label it with the detected emotion
+                            cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        except Exception as e:
+                            print(f"Error: {e}")
+                            continue
 
                 # # Check if 5 seconds have passed
                 # if elapsed_time >= 5:
