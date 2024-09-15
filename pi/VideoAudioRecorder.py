@@ -255,7 +255,7 @@ class VideoAudioRecorder:
                     confidence = round(emotion_prediction[0][max_index] * 100)
 
                     # Add the detected emotion to history
-                    self.emotion_history.append(emotion_label, confidence)
+                    self.emotion_history[emotion_label] = confidence
 
                     # Draw a bounding box around the face and label it with the detected emotion
                     cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
