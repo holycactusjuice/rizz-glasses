@@ -284,7 +284,7 @@ class VideoAudioRecorder:
                 #         print(f"Error sending data to server: {e}")
                 
                 # Display the output frame with bounding boxes and emotion labels (only if display is present)
-                # cv2.imshow("Emotion Detector", img_ori)
+                cv2.imshow("Emotion Detector", img_ori)
 
         cap.release()
         out.release()
