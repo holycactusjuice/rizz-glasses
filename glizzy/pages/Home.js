@@ -12,7 +12,7 @@ import axios from "axios";
 
 const HomeScreen = () => {
   const [text, setText] = useState("");
-  const piAddress = "http://172.20.10.8:6000"; // Replace with your Raspberry Pi's IP
+  const piAddress = "http://172.20.10.9:6000"; // Replace with your Raspberry Pi's IP
 
   const startRecording = async () => {
     try {

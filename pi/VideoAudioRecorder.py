@@ -12,7 +12,7 @@ import pyaudio
 load_dotenv()
 aai.settings.api_key = os.getenv("ASSEMBLY_APIKEY")
 
-FLASK_SERVER_URL = 'http://10.37.118.10:5000'  # computer server URL
+FLASK_SERVER_URL = 'http://172.20.10.9:5000'  # computer server URL
 
 
 class VideoAudioRecorder:
@@ -22,9 +22,6 @@ class VideoAudioRecorder:
         self.sample_rate = 16_000
         self.transcriber = None
         self.recorder = None
-
-    # Initialize Flask server for receiving transcriptions
-    app = Flask(__name__)
 
     def start_video_recording(self):
         cap = cv2.VideoCapture(0)
@@ -103,25 +100,29 @@ class VideoAudioRecorder:
         if self.transcriber:
             self.transcriber.close()
 
-    @app.route('/start-recording', methods=['GET'])
-    def start_recording(self):
-        self.recorder = VideoAudioRecorder()
 
-        # Start video recording in a new thread
-        video_thread = threading.Thread(target=self.recorder.start_video_recording)
-        video_thread.start()
+recorder = VideoAudioRecorder()
 
-        # Start audio transcription in a new thread
-        audio_thread = threading.Thread(target=self.recorder.start_audio_transcription)
-        audio_thread.start()
+# Initialize Flask app
+app = Flask(__name__)
 
-        return jsonify({"message": "Recording started"}), 200
+@app.route('/start-recording', methods=['GET'])
+def start_recording():
+    # Start video recording in a new thread
+    video_thread = threading.Thread(target=recorder.start_video_recording)
+    video_thread.start()
 
-    @app.route('/stop-recording', methods=['GET'])
-    def stop_recording(self):
-        self.recorder.stop()
-        return jsonify({"message": "Recording stopped"}), 200
+    # Start audio transcription in a new thread
+    audio_thread = threading.Thread(target=recorder.start_audio_transcription)
+    audio_thread.start()
+
+    return jsonify({"message": "Recording started"}), 200
+
+@app.route('/stop-recording', methods=['GET'])
+def stop_recording():
+    recorder.stop()
+    return jsonify({"message": "Recording stopped"}), 200
 
 
 if __name__ == '__main__':
-    VideoAudioRecorder.app.run(debug=True, host='0.0.0.0', port=6000)
+    app.run(debug=True, host='0.0.0.0', port=6000)
