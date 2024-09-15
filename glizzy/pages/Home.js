@@ -1,11 +1,18 @@
-import React from "react";
-import { View, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  TextInput,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 
 const HomeScreen = () => {
-  const piAddress = "http://10.37.118.10:6000"; // Replace with your Raspberry Pi's IP
+  const [text, setText] = useState("");
+  const piAddress = "http://172.20.10.8:6000"; // Replace with your Raspberry Pi's IP
 
   const startRecording = async () => {
     try {
@@ -29,6 +36,14 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TextInput
+        style={styles.textField}
+        placeholder="Enter your relationship context here"
+        placeholderTextColor="gray"
+        value={text}
+        onChangeText={setText}
+        multiline
+      />
       <View style={styles.buttonContainer}>
         {/* Record Button with reversed gradient */}
         <TouchableOpacity onPress={startRecording}>
@@ -68,6 +83,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  textField: {
+    width: "70%", // Takes up 70% of the screen width
+    height: "40%", // Adjust height as needed
+    borderColor: "gray",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 18,
+    textAlign: "center", // Center the text
+    marginBottom: 20, // Space between text field and buttons
   },
   buttonContainer: {
     flexDirection: "row", // Align buttons in a row

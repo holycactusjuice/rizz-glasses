@@ -21,7 +21,7 @@ class VideoAudioRecorder:
         self.start_time = 0
         self.sample_rate = 16_000
         self.transcriber = None
-        self.recorder = VideoAudioRecorder()
+        self.recorder = None
 
     # Initialize Flask server for receiving transcriptions
     app = Flask(__name__)
@@ -105,7 +105,7 @@ class VideoAudioRecorder:
 
     @app.route('/start-recording', methods=['GET'])
     def start_recording():
-        global recorder
+        recorder = VideoAudioRecorder()
 
         # Start video recording in a new thread
         video_thread = threading.Thread(target=recorder.start_video_recording)
@@ -119,8 +119,6 @@ class VideoAudioRecorder:
 
     @app.route('/stop-recording', methods=['GET'])
     def stop_recording():
-        global recorder
-        
         recorder.stop()
         return jsonify({"message": "Recording stopped"}), 200
 
