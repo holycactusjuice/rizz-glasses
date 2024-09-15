@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 import os
 from llmservice import GroqConversationAnalyzer
 
+# Global variable to set the context
+CONVERSATION_CONTEXT = "date"  # Can be changed to "business" as needed
+
 def create_app():
     load_dotenv()
 
@@ -46,23 +49,23 @@ def create_app():
         })
 
         return jsonify({"message": "New transcription inserted"})
-    
+
     def update_transcription(unix_timestamp, transcription_data):
         query = {"unix_timestamp": unix_timestamp}  # get from pi
 
         items.update_one(query, {
             # update frequency table
-            "$inc": {f"score_table.{transcription_data.score}": 1},
+            "$inc": {f"score_table.{transcription_data['score']}": 1},
             # update total time
             "$set": {
-                "total_time": transcription_data.time,
+                "total_time": transcription_data['time'],
                 # update transcription
-                "$set": {f"transcription.{transcription_data.time}": {
-                    "dialogue": transcription_data.dialogue,
-                    "sentiment": transcription_data.sentiment,
-                    "explanation": transcription_data.explanation,
-                    "score": transcription_data.score
-                }}
+                f"transcription.{transcription_data['time']}": {
+                    "dialogue": transcription_data['dialogue'],
+                    "sentiment": transcription_data['sentiment'],
+                    "explanation": transcription_data['explanation'],
+                    "score": transcription_data['score']
+                }
             },
         })
 
@@ -76,28 +79,32 @@ def create_app():
     def hello():
         return "Hello, MongoDB Atlas!"
 
-    @app.route('/stop-recording', methods={'GET'})
+    @app.route('/stop-recording', methods=['POST'])
     def stop_recording():
         response = request.get_json()
-        unix_timestamp = response.get('unix_timestamp')
+        unix_timestamp = response.get('start_recording_timestamp')
         update_summary(unix_timestamp, analyzer.summarize_conversation())
-        return "Recording stopped"
+        return jsonify({"message": "Recording stopped"})
 
-    @app.route('/transcribe', methods=['POST', 'GET'])
+    @app.route('/transcribe', methods=['POST'])
     def handle_transcription():
-        transcription_json = request.json()
+        global CONVERSATION_CONTEXT
+        transcription_json = request.get_json()
 
         conversation_timestamp = transcription_json['start_recording_timestamp']
         dialogue = transcription_json['text']
         transcription_timestamp = transcription_json['time']
         sentiment = transcription_json['sentiment']
-        context = transcription_json['context']
-
-        analyzer.score_conversation(dialogue, terminal=False)
-        suggestion = analyzer.return_suggestion()
-
-        score, explanation = analyzer.score_sentence(
-            dialogue, terminal=False)
+        
+        # Use the global context variable
+        if CONVERSATION_CONTEXT == "date":
+            score, explanation = analyzer.score_sentence(dialogue)
+            suggestion = analyzer.return_suggestion()
+        elif CONVERSATION_CONTEXT == "business":
+            score, explanation = analyzer.score_sentence(dialogue, type="business")
+            suggestion = analyzer.return_suggestion(type="business")
+        else:
+            return jsonify({"error": "Invalid conversation context"}), 400
 
         data = {
             "dialogue": dialogue,
@@ -107,19 +114,16 @@ def create_app():
             "time": transcription_timestamp
         }
 
-        conversation_query = {
-            "unix_timestamp": conversation_timestamp}  # get from pi
+        conversation_query = {"unix_timestamp": conversation_timestamp}
 
         if items.find_one(conversation_query) is None:
-            insert_new_transcription(
-                conversation_timestamp, conversation_timestamp)
+            insert_new_transcription(conversation_timestamp)
 
         update_transcription(conversation_timestamp, data)
 
         return jsonify({"suggestion": suggestion})
 
     return app
-
 
 if __name__ == '__main__':
     app = create_app()

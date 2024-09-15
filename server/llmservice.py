@@ -3,13 +3,14 @@ from langchain.chains import LLMChain
 from langchain_groq import ChatGroq
 from langchain.memory import ConversationBufferMemory, ConversationSummaryMemory
 from templates import SUGGESTION_TEMPLATE_DATE, SCORING_TEMPLATE_DATE, SUMMARIZE_TEMPLATE_DATE, SUGGESTION_TEMPLATE_BUSINESS, SCORING_TEMPLATE_BUSINESS, SUMMARIZE_TEMPLATE_BUSINESS
+from dotenv import load_dotenv
+import os
 
 class GroqConversationAnalyzer:
-    def __init__(self, api_key, user):
+    def __init__(self, api_key):
 
         # Initialize LangChain components
         self.llm = ChatGroq(api_key=api_key)
-        self.user = user
         self.memory = ConversationBufferMemory(input_key="human_input", memory_key="chat_history")
         self.template_date_suggestion = PromptTemplate(
             input_variables=["chat_history, human_input"],
@@ -120,6 +121,7 @@ class GroqConversationAnalyzer:
 
 
 if __name__ == "__main__":
-    api_key = "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"
-    analyzer = GroqConversationAnalyzer(api_key=api_key, user=True)
+    load_dotenv()
+    api_key = "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"
+    analyzer = GroqConversationAnalyzer(api_key=api_key)
     analyzer.run_conversation("hello", terminal=True)
