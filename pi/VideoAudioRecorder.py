@@ -360,6 +360,7 @@ start_recording_timestamp = 0
 
 @app.route('/start-recording', methods=['GET'])
 def start_recording():
+    global start_recording_timestamp
     start_recording_timestamp = time.time()
 
     # Start video recording in a new thread
@@ -375,6 +376,9 @@ def start_recording():
 @app.route('/stop-recording', methods=['GET'])
 def stop_recording():
     recorder.stop()
+    requests.post(FLASK_SERVER_URL + "/stop-recording", 
+                  json={'start_recording_timestamp': start_recording_timestamp}
+                  )
     return jsonify({"message": "Recording stopped"}), 200
 
 
