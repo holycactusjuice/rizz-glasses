@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
+from flask_pymongo import PyMongo
 from dotenv import load_dotenv
 import os
 from llmservice import GroqConversationAnalyzer
 
 # Global variable to set the context
 CONVERSATION_CONTEXT = "date"  # Can be changed to "business" as needed
+
 
 def create_app():
     load_dotenv()
@@ -16,7 +18,7 @@ def create_app():
     MONGO_CLUSTER = os.getenv("MONGO_CLUSTER", "cluster0")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-    analyzer = GroqConversationAnalyzer(GROQ_API_KEY)
+    analyzer = GroqConversationAnalyzer(GROQ_API_KEY, user=True)
 
     app = Flask(__name__)
 
@@ -24,31 +26,36 @@ def create_app():
     mongo_uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASSWD}@{MONGO_CLUSTER}.ejp2g.mongodb.net/{MONGO_DB}?retryWrites=true&w=majority"
 
     # Set up MongoDB client
-    mongo_client = MongoClient(mongo_uri)
+    mongo_client = MongoClient(mongo_uri, tlsInsecure=True)
     db = mongo_client[MONGO_DB]
     items = db['items']
+
+    app.config['MONGO_URI'] = mongo_uri
+    mongo = PyMongo(app)
 
     def insert_new_transcription(unix_timestamp):
         items.insert_one({
             "unix_timestamp": unix_timestamp,
             "frequency_table": {
-                1: 0,
-                2: 0,
-                3: 0,
-                4: 0,
-                5: 0,
-                6: 0,
-                7: 0,
-                8: 0,
-                9: 0,
-                10: 0
+                "1": 0,
+                "2": 0,
+                "3": 0,
+                "4": 0,
+                "5": 0,
+                "6": 0,
+                "7": 0,
+                "8": 0,
+                "9": 0,
+                "10": 0
             },
             "total_time": 0,
-            "transcription": {},
+            "transcription": [],
             "summary": ""
         })
 
-        return jsonify({"message": "New transcription inserted"})
+        print("New transcription inserted")
+
+        return
 
     def update_transcription(unix_timestamp, transcription_data):
         query = {"unix_timestamp": unix_timestamp}  # get from pi
@@ -60,7 +67,10 @@ def create_app():
             "$set": {
                 "total_time": transcription_data['time'],
                 # update transcription
-                f"transcription.{transcription_data['time']}": {
+            },
+            "$push": {
+                f"transcription": {
+                    "time": transcription_data['time'],
                     "dialogue": transcription_data['dialogue'],
                     "sentiment": transcription_data['sentiment'],
                     "explanation": transcription_data['explanation'],
@@ -69,11 +79,16 @@ def create_app():
             },
         })
 
+        print("Transcription updated")
+
+        return
+
     def update_summary(unix_timestamp, summary):
         query = {"unix_timestamp": unix_timestamp}
         items.update_one(query, {
             "$set": {"summary": summary}
         })
+        print("Summary updated")
 
     @app.route('/')
     def hello():
@@ -95,13 +110,14 @@ def create_app():
         dialogue = transcription_json['text']
         transcription_timestamp = transcription_json['time']
         sentiment = transcription_json['sentiment']
-        
+
         # Use the global context variable
         if CONVERSATION_CONTEXT == "date":
             score, explanation = analyzer.score_sentence(dialogue)
             suggestion = analyzer.return_suggestion()
         elif CONVERSATION_CONTEXT == "business":
-            score, explanation = analyzer.score_sentence(dialogue, type="business")
+            score, explanation = analyzer.score_sentence(
+                dialogue, type="business")
             suggestion = analyzer.return_suggestion(type="business")
         else:
             return jsonify({"error": "Invalid conversation context"}), 400
@@ -114,16 +130,18 @@ def create_app():
             "time": transcription_timestamp
         }
 
-        conversation_query = {"unix_timestamp": conversation_timestamp}
+        print("data:", data, "suggestion:", suggestion)
+
+        conversation_query = {
+            "unix_timestamp": conversation_timestamp}  # get from pi
 
         if items.find_one(conversation_query) is None:
             insert_new_transcription(conversation_timestamp)
-
         update_transcription(conversation_timestamp, data)
-
         return jsonify({"suggestion": suggestion})
 
     return app
+
 
 if __name__ == '__main__':
     app = create_app()
