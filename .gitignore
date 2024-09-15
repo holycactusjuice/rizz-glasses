@@ -7,3 +7,5 @@ backend/*.env
 # glizzy
 glizzy/node_modules/
 glizzy/.expo/
+
+*.env

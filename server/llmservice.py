@@ -53,8 +53,8 @@ class GroqConversationAnalyzer:
         New Input Sentence: {input}
 
         Provide:
-        1. Score: [Insert a single integer between 1 and 10]
-        2. Brief Explanation: [Offer a concise analysis of the sentence's effectiveness, appropriateness, and impact on the conversation, considering the current stage of the interaction]
+        Score: [Insert a single integer between 1 and 10]
+        Brief Explanation: [Offer a concise analysis of the sentence's effectiveness, appropriateness, and impact on the conversation, considering the current stage of the interaction]
         """
         )
 
@@ -89,7 +89,7 @@ class GroqConversationAnalyzer:
 
     def score_sentence(self, sentence):
         response = self.chain_score.invoke({"input": sentence, "human_input":""})
-        
+        print(response)
         # Parse the response to extract score and explanation
         lines = response['text'].strip().split('\n')
         score = int(lines[0].split(':')[1].strip())
@@ -113,23 +113,31 @@ class GroqConversationAnalyzer:
         
         return results
 
-    def run_conversation(self):
-        while True:
-            input_text = input("\nYou: ")
-            if input_text.lower() == 'quit':
-                break
-            elif input_text.lower() == 'return_suggestion':
-                suggestion = self.return_suggestion()
-                print(f"Suggestion: {suggestion}")
-                continue
-            
-            results = self.process_input(input_text)
-            for result in results:
-                print(f"\nSentence: {result['sentence']}")
-                print(f"Score: {result['score']}")
-                print(f"{result['explanation']}")
+    def run_conversation(self, input_text, terminal=True):
+        if terminal:
+            while True:
+                input_text = input("\nYou: ")
+                if input_text.lower() == 'quit':
+                    break
+                elif input_text.lower() == 'return_suggestion':
+                    suggestion = self.return_suggestion()
+                    print(f"Suggestion: {suggestion}")
+                    continue
+                
+                results = self.process_input(input_text)
+                for result in results:
+                    print(f"\nSentence: {result['sentence']}")
+                    print(f"Score: {result['score']}")
+                    print(f"{result['explanation']}")
+        # else:
+        #     if input_text.lower() == 'return_suggestion':
+        #         suggestion = self.return_suggestion()
+        #         return suggestion
+        #     results = self.process_input(input_text)
+        #     return results
+
 
 if __name__ == "__main__":
     api_key = "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"
     analyzer = GroqConversationAnalyzer(api_key)
-    analyzer.run_conversation()
+    analyzer.run_conversation("hello", terminal=True)
