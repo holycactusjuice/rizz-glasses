@@ -358,6 +358,7 @@ class VideoAudioRecorder:
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
+                    
                 except Exception as e:
                     print(f"Error sending data to server: {e}")
             else:
