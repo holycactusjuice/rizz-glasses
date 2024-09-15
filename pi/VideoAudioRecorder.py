@@ -338,7 +338,7 @@ class VideoAudioRecorder:
 
         def on_data(transcript: aai.RealtimeTranscript):
             engine = pyttsx3.init()
-            engine.setProperty('rate', 250)
+            engine.setProperty('rate', 200)
             engine.setProperty('volume', 0.9)
             if not transcript.text:
                 return
@@ -372,7 +372,9 @@ class VideoAudioRecorder:
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")
-                    engine.say(response_data['suggestion'])
+                    suggestion = response_data['suggestion'].split('\n\n', 1)[
+                        0]
+                    engine.say(suggestion)
                     engine.runAndWait()
                 except Exception as e:
                     print(f"Error sending data to server: {e}")
