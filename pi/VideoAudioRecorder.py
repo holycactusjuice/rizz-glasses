@@ -226,95 +226,96 @@ class VideoAudioRecorder:
             #     rect, 1 / image_std, (width, height), 127)
             # )
 
-            frame = cap.read()
-            out.write(frame)
-            frame = cv2.flip(frame, 1)
-            img_ori = frame
-            # Resize and prepare the frame for face detection
-            rect = cv2.resize(img_ori, (width, height))
-            rect = cv2.cvtColor(rect, cv2.COLOR_BGR2RGB)
-            net.setInput(cv2.dnn.blobFromImage(
-                rect, 1 / image_std, (width, height), 127)
-            )
+            ret, frame = cap.read()
+            if ret:
+                out.write(frame)
+                frame = cv2.flip(frame, 1)
+                img_ori = frame
+                # Resize and prepare the frame for face detection
+                rect = cv2.resize(img_ori, (width, height))
+                rect = cv2.cvtColor(rect, cv2.COLOR_BGR2RGB)
+                net.setInput(cv2.dnn.blobFromImage(
+                    rect, 1 / image_std, (width, height), 127)
+                )
 
-            # Perform face detection using the existing network
-            boxes, scores = net.forward(["boxes", "scores"])
-            boxes = np.expand_dims(np.reshape(boxes, (-1, 4)), axis=0)
-            scores = np.expand_dims(np.reshape(scores, (-1, 2)), axis=0)
-            boxes = convert_locations_to_boxes(
-                boxes, priors, center_variance, size_variance
-            )
-            boxes = center_form_to_corner_form(boxes)
+                # Perform face detection using the existing network
+                boxes, scores = net.forward(["boxes", "scores"])
+                boxes = np.expand_dims(np.reshape(boxes, (-1, 4)), axis=0)
+                scores = np.expand_dims(np.reshape(scores, (-1, 2)), axis=0)
+                boxes = convert_locations_to_boxes(
+                    boxes, priors, center_variance, size_variance
+                )
+                boxes = center_form_to_corner_form(boxes)
 
-            # Perform prediction and get face bounding boxes
-            picked_boxes, picked_labels, picked_scores = predict(
-                frame_width, frame_height, scores, boxes, threshold
-            )
+                # Perform prediction and get face bounding boxes
+                picked_boxes, picked_labels, picked_scores = predict(
+                    frame_width, frame_height, scores, boxes, threshold
+                )
 
-            # Loop over detected faces
-            for i, box in enumerate(picked_boxes):
-                x1, y1, x2, y2 = box
+                # Loop over detected faces
+                for i, box in enumerate(picked_boxes):
+                    x1, y1, x2, y2 = box
 
-                # Extract the face region from the frame
-                face = img_ori[y1:y2, x1:x2]
-                # face = frame_rgb[y1:y2, x1:x2]
+                    # Extract the face region from the frame
+                    face = img_ori[y1:y2, x1:x2]
+                    # face = frame_rgb[y1:y2, x1:x2]
 
-                if face.size != 0:
-                    try:
-                        # Preprocess the face for the emotion model
-                        face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
-                        face_resized = cv2.resize(face_gray, (48, 48))  # Resize to match model input size
-                        face_normalized = face_resized / 255.0
-                        face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
+                    if face.size != 0:
+                        try:
+                            # Preprocess the face for the emotion model
+                            face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+                            face_resized = cv2.resize(face_gray, (48, 48))  # Resize to match model input size
+                            face_normalized = face_resized / 255.0
+                            face_reshaped = np.reshape(face_normalized, (1, 48, 48, 1))
 
-                        # Run emotion prediction
-                        emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
-                        max_index = np.argmax(emotion_prediction[0])
-                        emotion_label = emotion_dict[max_index]
-                        confidence = round(emotion_prediction[0][max_index] * 100)
+                            # Run emotion prediction
+                            emotion_prediction = emotion_model.predict(face_reshaped, verbose=0)
+                            max_index = np.argmax(emotion_prediction[0])
+                            emotion_label = emotion_dict[max_index]
+                            confidence = round(emotion_prediction[0][max_index] * 100)
 
-                        # Add the detected emotion to history
-                        self.emotion_history[emotion_label] = confidence
+                            # Add the detected emotion to history
+                            self.emotion_history[emotion_label] = confidence
 
-                        # Draw a bounding box around the face and label it with the detected emotion
-                        cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                        cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            # Draw a bounding box around the face and label it with the detected emotion
+                            cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-                        # cv2.rectangle(frame_rgb, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        # cv2.putText(frame_rgb, emotion_label, (x1, y1 - 10),
-                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                        # cv2.putText(frame_rgb, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                    except Exception as e:
-                        print(f"Error: {e}")
-                        continue
+                            # cv2.rectangle(frame_rgb, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            # cv2.putText(frame_rgb, emotion_label, (x1, y1 - 10),
+                            #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            # cv2.putText(frame_rgb, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        except Exception as e:
+                            print(f"Error: {e}")
+                            continue
 
-            # # Check if 5 seconds have passed
-            # if elapsed_time >= 5:
-            #     # Determine the most common emotion in the last 5 seconds
-            #     if emotion_history:
-            #         most_common_emotion = Counter(emotion_history).most_common(1)[0][0]
-            #         cv2.putText(img_ori, f"5s Sentiment: {most_common_emotion}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            #     # Reset the history and timer
-            #     emotion_history = []
-            #     start_time = time.time()
-            #     # Send sentiment to Flask server
-            #     try:
-            #         response = requests.post(
-            #             FLASK_SERVER_URL + "/sentiment",
-            #             json={'text': most_common_emotion, 'time': time.time() - self.start_time}
-            #         )
-            #         response_data = response.json()
-            #         print(f"Server Response: {response_data}")
-            #     except Exception as e:
-            #         print(f"Error sending data to server: {e}")
+                # # Check if 5 seconds have passed
+                # if elapsed_time >= 5:
+                #     # Determine the most common emotion in the last 5 seconds
+                #     if emotion_history:
+                #         most_common_emotion = Counter(emotion_history).most_common(1)[0][0]
+                #         cv2.putText(img_ori, f"5s Sentiment: {most_common_emotion}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                #     # Reset the history and timer
+                #     emotion_history = []
+                #     start_time = time.time()
+                #     # Send sentiment to Flask server
+                #     try:
+                #         response = requests.post(
+                #             FLASK_SERVER_URL + "/sentiment",
+                #             json={'text': most_common_emotion, 'time': time.time() - self.start_time}
+                #         )
+                #         response_data = response.json()
+                #         print(f"Server Response: {response_data}")
+                #     except Exception as e:
+                #         print(f"Error sending data to server: {e}")
 
-            # # Convert back to BGR for display
-            frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
-            
-            # Display the output frame with bounding boxes and emotion labels (only if display is present)
-            cv2.imshow("Emotion Detector", frame_bgr)
+                # # Convert back to BGR for display
+                frame_bgr = cv2.cvtColor(img_ori, cv2.COLOR_RGB2BGR)
+                
+                # Display the output frame with bounding boxes and emotion labels (only if display is present)
+                cv2.imshow("Emotion Detector", frame_bgr)
 
         cap.release()
         out.release()
