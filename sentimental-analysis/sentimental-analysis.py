@@ -3,6 +3,7 @@ import numpy as np
 import math
 import time
 from keras.models import load_model
+from collections import Counter
 
 image_mean = np.array([127, 127, 127])
 image_std = 128.0
@@ -62,7 +63,6 @@ def generate_priors(feature_map_list, shrinkage_list, image_size, min_boxes):
                         w,
                         h
                     ])
-    print("priors nums:{}".format(len(priors)))
     return np.clip(priors, 0.0, 1.0)
 
 def hard_nms(box_scores, iou_threshold, top_k=-1, candidate_size=200):
@@ -192,6 +192,9 @@ if __name__ == "__main__":
     width = input_size[0]
     height = input_size[1]
     priors = define_img_size(input_size)
+
+    emotion_history = []
+    start_time = time.time()
  
     while cap.isOpened():
         ret, frame = cap.read()
@@ -206,7 +209,6 @@ if __name__ == "__main__":
             )
 
             # Perform face detection using the existing network
-            start_time = time.time()
             boxes, scores = net.forward(["boxes", "scores"])
             boxes = np.expand_dims(np.reshape(boxes, (-1, 4)), axis=0)
             scores = np.expand_dims(np.reshape(scores, (-1, 2)), axis=0)
@@ -239,12 +241,28 @@ if __name__ == "__main__":
                 emotion_label = emotion_dict[max_index]
                 confidence = round(emotion_prediction[0][max_index] * 100)
 
+                # Add the detected emotion to history
+                emotion_history.append(emotion_label)
+
                 # Draw a bounding box around the face and label it with the detected emotion
                 cv2.rectangle(img_ori, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 cv2.putText(img_ori, emotion_label, (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
                 cv2.putText(img_ori, str(confidence) + "%", (x1, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
+            # Calculate the elapsed time
+            elapsed_time = time.time() - start_time
+
+            # Check if 5 seconds have passed
+            if elapsed_time >= 5:
+                # Determine the most common emotion in the last 5 seconds
+                if emotion_history:
+                    most_common_emotion = Counter(emotion_history).most_common(1)[0][0]
+                    cv2.putText(img_ori, f"5s Sentiment: {most_common_emotion}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                # Reset the history and timer
+                emotion_history = []
+                start_time = time.time()
+            
             # Display the output frame with bounding boxes and emotion labels
             cv2.imshow("Emotion Detector", img_ori)
 
