@@ -303,7 +303,10 @@ class VideoAudioRecorder:
             if isinstance(transcript, aai.RealtimeFinalTranscript):
                 print(transcript.text, end="\r\n")
                 # Process the most common sentiment
-                most_common_emotion = Counter(self.emotion_history.keys()).most_common(1)[0][0]
+                if self.emotion_history:
+                    most_common_emotion = Counter(self.emotion_history.keys()).most_common(1)[0][0]
+                else:
+                    most_common_emotion = None
                 emotion_count = 0
                 total_confidence = 0
                 for emotion in self.emotion_history.keys():
