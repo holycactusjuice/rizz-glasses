@@ -351,6 +351,7 @@ start_recording_timestamp = 0
 
 @app.route('/start-recording', methods=['GET'])
 def start_recording():
+    global start_recording_timestamp
     start_recording_timestamp = time.time()
 
     # Start video recording in a new thread
