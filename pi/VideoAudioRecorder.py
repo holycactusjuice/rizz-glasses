@@ -309,7 +309,7 @@ class VideoAudioRecorder:
                 try:
                     response = requests.post(
                         FLASK_SERVER_URL + "/transcribe",
-                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'time': time.time() - self.start_time}
+                        json={'text': transcript.text, 'sentiment': most_common_emotion, 'start_recording_timestamp': start_recording_timestamp, 'time': time.time() - self.start_time}
                     )
                     response_data = response.json()
                     print(f"Server Response: {response_data}")

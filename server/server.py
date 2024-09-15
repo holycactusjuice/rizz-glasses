@@ -14,9 +14,11 @@ def transcribe():
         data = request.get_json()  # Expecting JSON data
         # Extract 'text' from JSON payload
         transcription_text = data.get('text', '')
+        sentiment = data.get('sentiment', '')
+        start_recording_timestamp = data.get('start_recording_timestamp', '')
         print(f"Received transcription: {transcription_text}")
         # You can add additional processing here if needed
-        response = {"status": "success", "received_text": transcription_text}
+        response = {"status": "success", "sentiment": sentiment, "received_text": transcription_text, "start_recording_timestamp": start_recording_timestamp}
     except Exception as e:
         print(f"Error: {e}")
         response = {"status": "error", "message": str(e)}
